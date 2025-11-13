@@ -1,0 +1,226 @@
+\documentclass{beamer}
+
+\usetheme{metropolis}
+
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage[T2A]{fontenc}
+\usepackage{graphicx}
+
+\usebackgroundtemplate{
+  \includegraphics[width=\paperwidth,height=\paperheight]{images/background.jpg}
+}
+
+\title{Кейс для продуктовых аналитиков (осень 2025)}
+\author{Андрей}
+\institute{Т-Образование}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Знакомство с датасетом}
+    \begin{block}{О датасете}
+        Данный датасет содержит подробную информацию о поездках на электросамокатах, арендованных через приложение Т-Банка. Каждый ряд таблицы описывает одну поездку и включает:
+        \begin{itemize}
+            \item параметры заказа (даты и время, стоимость, дальность, модель самоката);
+            \item характеристики клиента (возраст, пол, образование, семейное положение);
+            \item начисления и бонусы по лояльностным программам.
+        \end{itemize}
+        Датасет обезличен и предназначен для анализа пользовательского поведения, оптимизации тарифов и выявления закономерностей в использовании услуги аренды.
+    \end{block}
+
+    \vfill
+    \small{Источник: \url{https://dano.hse.ru/data2024}}
+\end{frame}
+
+\begin{frame}{Распределение величин}
+  \begin{figure}
+    \includegraphics[width=\linewidth]{images/graph1.png}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{Основные выводы}
+\begin{itemize}
+    \item Объем данных: \textbf{396 749} наблюдений
+    \item Средний возраст пользователей: \textbf{31.5 года}
+    \begin{itemize}
+        \item 75\% пользователей младше 37 лет
+    \end{itemize}
+    
+    \item Типичная стоимость поездки:
+    \begin{itemize}
+        \item Активация: \textbf{42.6} (медиана: 50.0)
+        \item Минута: \textbf{7.3} (медиана: 7.5)
+        \item Итог: \textbf{85.9} (медиана: 78.0)
+    \end{itemize}
+    
+    \item Стандартный залог: \textbf{300} (фиксированная величина для 75\% случаев)
+    
+    \item Средняя дистанция: \textbf{3.7 км} (медиана 1.7 км)
+    \begin{itemize}
+        \item Наличие экстремальных выбросов (макс: 56 012 км)
+    \end{itemize}
+    
+    \item Время бронирования: \textbf{11.4 минуты} (медиана 7.8 минут)
+    
+    \item Лояльность пользователей:
+    \begin{itemize}
+        \item В среднем \textbf{36.5} поездок на пользователя
+        \item Медианное значение \textbf{19} поездок
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Проблемы данных}
+\begin{alertblock}{Аномалии и выбросы}
+\begin{itemize}
+    \item Отрицательные значения в стоимости поездок
+    \item Экстремальные расстояния (max: 56 012 км)
+    \item Сильное отличие медианы от среднего по ключевым метрикам
+\end{itemize}
+\end{alertblock}
+
+\begin{exampleblock}{Ключевые выводы}
+\begin{itemize}
+    \item Датчики расстояния электросамокатов моделей ES*** часто выходят из строя.
+    \item Бонусы за импользование кредитной карты расчитываются не корректно или не очевидно.
+    \item Надо бы все нормировать все при помощи \textbf{StandartScaler}, так мы не потеряем важные выбросы и сохраним основные отношения.
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{Продуктовые гипотезы}
+  \begin{itemize}
+    \item Гипотеза 1: \textbf{Зависят ли предпочтения пользователей по тарифам от времени суток?}
+
+Гипотеза предполагает, что краткосрочные поездки популярнее утром в рабочие дни.
+    \item Гипотеза 2: \textbf{Влияет ли семейное положение человека на вероятность поездок?}
+
+Проверка: Одинокие люди более склонны к поездкам.
+    \item Гипотеза 3: \textbf{Как влияет расстояние поездки на выбор тарифа?}
+
+Исследование: склонны ли пользователи выбирать дорогой тариф($>8.22$руб/мин) при коротких поездках ($<286$сек).
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Гипотеза: Одинокие люди более склонны к поездкам}
+\begin{columns}[T]
+    
+\begin{column}{0.48\textwidth}
+\vspace{1em}
+\textbf{Статистическая значимость}
+\begin{itemize}
+    \item t-тест: \textcolor{gray}{p=1.17e-18}
+    \item ANOVA: \textcolor{gray}{p=2.9e-17}
+    \item Mann-Whitney: \textcolor{gray}{p=9.97e-23}
+    \item Kruskal-Wallis: \textcolor{gray}{p=2.32e-21}
+\end{itemize}
+
+\vspace{1em}
+\textbf{Размер эффекта}
+\begin{itemize}
+    \item Cohen's d: 0.098 (\textcolor{gray}{малый})
+    \item Eta²: 0.001 (\textcolor{gray}{0.1\% дисперсии})
+\end{itemize}
+\end{column}
+
+\begin{column}{0.52\textwidth}
+\vspace{1em}
+\textbf{Среднее число поездок (95\% ДИ)}
+\begin{itemize}
+    \item \textbf{Одинокие:} 6.98 [6.75, 7.21]
+    \item \textbf{Семейные:} 5.62 [5.42, 5.81]
+    \item \textbf{Прочие:} 6.33 [5.62, 7.05]
+\end{itemize}
+
+\vspace{1em}
+\textbf{Практическая значимость}
+\begin{itemize}
+    \item Разница: +24.2\% vs семейные
+    \item Odds Ratio: 1.18
+\end{itemize}
+\end{column}
+
+\end{columns}
+
+\vspace{2em}
+\begin{block}{Вывод}
+\textbf{Гипотеза подтверждена:} одинокие люди действительно совершают поездки чаще семейных при статистической значимости во всех тестах, хотя эффект имеет небольшую величину.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Рынок кикшеринга в России: консолидация и рост}
+  \begin{columns}
+    \begin{column}{0.48\textwidth}
+      \begin{center}
+        \includegraphics[width=1.1\linewidth]{images/market_share_pie_chart.png}
+      \end{center}
+      \begin{itemize}
+        \item Топ-3 оператора контролируют \textbf{>85\%} рынка в денежном выражении
+      \end{itemize}
+    \end{column}
+    \hfill
+    \begin{column}{0.52\textwidth}
+      \textbf{Динамично растущий рынок городской мобильности}
+      \begin{itemize}
+        \item Объём рынка в 2024 г.: \textbf{31,1 млрд руб.} (+39.8\% г/г)
+        \item Количество поездок: \textbf{281,6 млн} 
+        \item Аудитория: \textbf{25,3 млн} пользователей
+      \end{itemize}
+      
+      \vspace{0.8cm}
+      
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Whoosh (Т-Банк) — абсолютный лидер рынка}
+    
+    \textbf{Рыночная доля:} \textbf{~47\%} от всех поездок в России \\
+    \textit{(Каждый второй самокат в стране — Whoosh)}
+    
+    \vspace{0.3cm}
+    
+    \begin{columns}
+        
+        \column{0.5\textwidth}
+        \textbf{Ключевые показатели (2024)}
+        \begin{itemize}
+            \item \textbf{149,7 млн} поездок \\ (+44\% г/г)
+            \item Парк: \textbf{245,3 тыс.} самокатов
+            \item География: \textbf{81} город \\ (Россия и Латинская Америка)
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \textbf{Сравнение с конкурентами}
+        \begin{itemize}
+            \item \textit{Whoosh:} \textbf{~47\%}
+            \item \textit{МТС Юрент:} \textbf{~33\%}
+            \item \textit{Яндекс Go:} \textbf{~8\%}
+            \item \textit{Прочие:} \textbf{~12\%}
+        \end{itemize}
+        
+    \end{columns}
+    
+    \vspace{0.5cm}
+    
+    \centering
+\end{frame}
+
+\begin{frame}{ИИ-инструменты}
+  Использовался Perplexity для
+  \begin{itemize}
+    \item Поиска информации
+    \item Генерации громоздкого кода и верстки
+    \item Определения доли рынка ТБанка
+  \end{itemize}
+  Так же благодарность Claude Sonet 4.5, DeepSeek, ChatGPT 5.
+\end{frame}
+
+
+\end{document}
